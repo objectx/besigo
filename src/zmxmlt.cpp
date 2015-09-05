@@ -27,6 +27,7 @@
 #include "model.h"
 #include "kelemenmlt.h"
 #include "lensnuma.h"
+#define STBI_HEADER_FILE_ONLY
 #include "stb_image.c"
 
 #include "include/embree2/rtcore.h" // EMBREE.

@@ -1,0 +1,21 @@
+
+function (download_osx_embree)
+    message ("Download Embree into ${CMAKE_CURRENT_BINARY_DIR}")
+    set (ARCHIVE "${CMAKE_CURRENT_BINARY_DIR}/${EMBREE_NAME}.tar.gz")
+    if (NOT EXISTS ${ARCHIVE})
+        file (DOWNLOAD "https://github.com/embree/embree/releases/download/v2.6.2/embree-2.6.2.x86_64.macosx.tar.gz"
+                       ${ARCHIVE} SHOW_PROGRESS)
+        execute_process (COMMAND "tar" "xzf" ${ARCHIVE})
+    endif ()
+endfunction ()
+
+if (${APPLE})
+    set (EMBREE_NAME embree-2.6.2.x86_64.macosx)
+    set (EMBREE_DIR ${CMAKE_CURRENT_BINARY_DIR}/${EMBREE_NAME})
+    download_osx_embree ()
+    if (NOT EXISTS ${EMBREE_DIR})
+        message (FATAL_ERROR "No Embree")
+    endif ()
+else ()
+    message (FATAL_ERROR "Sorry, Unsupported platform")
+endif ()

@@ -12,9 +12,9 @@
 struct PrimarySample {
   int modify_time;
   double value;
-  PrimarySample( RANDOM::xor128& xor ) {
+  PrimarySample( RANDOM::xor128& rnd ) {
     modify_time = 0;
-    value = xor.rand01();
+    value = rnd.rand01();
   }
 };
 
@@ -43,7 +43,7 @@ private:
 public:
 
   RANDOM::xor128 xor128_;
-  
+
   // 論文で使われているものとほぼ同じ
   int global_time;
   int large_step;

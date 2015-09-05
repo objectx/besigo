@@ -3,9 +3,11 @@
  * do not remove these text.
  * please contact before business use.
  */
-
+#pragma once
 #ifndef __XOR128_H
 #define __XOR128_H
+
+#include <limits.h>
 
 namespace RANDOM {
 

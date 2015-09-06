@@ -21,7 +21,7 @@ namespace NUMA { // レンズは沼です.
     Vector dir_;
     Vector point_;
     Vector normal_;
-    
+
     Intersection() : hit_(false) {;}
     void set( bool hit, const Vector& from, const Vector& dir, const Vector& point, const Vector& norm ){
       hit_   = hit;
@@ -35,7 +35,7 @@ namespace NUMA { // レンズは沼です.
   void reflect( const Vector& I, const Vector& N, Vector& result ){
     result = I - N * 2. * N.dot( I );
   }
-  
+
   bool refract( const Vector& I, Vector& N, double eta, Vector& result ){
     if( I.dot( N ) > 0. )
       N = N * -1.;
@@ -45,10 +45,10 @@ namespace NUMA { // レンズは沼です.
     result = I * eta + (N * (eta * cosi - sqrtf( cost2 )));
     return true;
   }
-  
+
   class Surface{
   public:
-    
+
     typedef enum {
       NONE,     // 空間.
       APERTURE_HEXAGONAL, // 六角絞り
@@ -58,7 +58,7 @@ namespace NUMA { // レンズは沼です.
       CYLINDER_Y, // シリンドリカルレンズY. anamo.
       CYLINDER_Z, // シリンドリカルレンズZ.
     } TYPE;
-    
+
     TYPE  type_;
     double center_;
     double radius_;
@@ -72,7 +72,7 @@ namespace NUMA { // レンズは沼です.
     double coat_thickness_; // 275nm = 550nmの半波長.
     double coat_ior_;       // MgF2で1.38
     double roughness_;
-    
+
     Surface(){
       init();
     }
@@ -86,7 +86,7 @@ namespace NUMA { // レンズは沼です.
       iris_y_  = 1.;
       thickness_ = 0.;
       roughness_ = 0.; // 面の荒れ.
-      
+
       ior_     = 1.; // at D light.
       abbe_vd_ = 1.; // at D light.
       reflection_ = 0.1;
@@ -94,17 +94,17 @@ namespace NUMA { // レンズは沼です.
     }
 
     double ior( double lambda ) const {
-      
+
       //return ior_ + (lambda / 1000.) / ( 100. * abbe_vd_ );
-      /* 
+      /*
       if( abbe_vd_ <= 0. )
         return ior_;
-      
+
       const double A1 = -8.39627218911159000000;
       const double B1 =  0.07307694336347550000;
       const double A2 =  5.43767332268365000000;
       const double B2 = -0.04894067114512750000;
-      
+
       double A  = B1 + A1 * abbe_vd_;
       double B  = B2 + A2 * abbe_vd_;
       return ior_ + B + A * (lambda / 1000.);
@@ -182,9 +182,9 @@ namespace NUMA { // レンズは沼です.
       }
 
       if( type_ == CYLINDER_Y ){
-        
+
         Vector center( center_, 0., 0. );
-        
+
         // Y軸シリンドリカルレンズ. X^2+Z^2 = radius^2
         double px = origin.x - center_;
         double a = dir.x * dir.x + dir.z * dir.z;
@@ -193,13 +193,13 @@ namespace NUMA { // レンズは沼です.
         double d = b * b - 4. * a * c ;
         if( d < 0. )
           return false;
-        
+
         double s  = sqrt( d );
         double t1 = ( -b + s ) / (2. * a);
         double t2 = ( -b - s ) / (2. * a);
         if( t1 <= 0. && t2 <= 0. )
           return false;
-        
+
         if( t2 >= 0. && t1 >= 0. ){
           Vector p1 = origin + dir * t1;
           Vector p2 = origin + dir * t2;
@@ -228,12 +228,12 @@ namespace NUMA { // レンズは沼です.
             }
             return false;
           }
-          
+
         }else{
-          
+
           double t;
           t = (t1 > t2) ? t1 : t2; // どちらかが負なら大きい方が距離.
-          
+
           Vector p = origin + dir * t;
           if( p.y > diameter_ || p.y <= -diameter_ )
             return false;
@@ -249,16 +249,16 @@ namespace NUMA { // レンズは沼です.
             hit.set( true, origin, dir, p, n );
             return true;
           }
-          
+
           return false;
         }
-        
+
         return false;
-        
+
       }else if( type_ == STANDARD ){
-        
+
         // 球面レンズ.
-        
+
         Vector center( center_, 0., 0. );
         Vector oc = origin - center;
 
@@ -350,17 +350,17 @@ namespace NUMA { // レンズは沼です.
       return false;
     }
   };
-  
+
   typedef std::vector<Surface> SurfaceSet;
-  
+
   class Lens {
   public:
-    
+
     SurfaceSet surfaces_;
     double imageSurfaceZ_;
     double imageSurfaceR_; // 像面高さ.
     double irisScale_;
-    
+
     Lens() {
       surfaces_.clear();
       imageSurfaceZ_ = 100.;
@@ -378,7 +378,7 @@ namespace NUMA { // レンズは沼です.
       double f   = 1.f/((ior-1.)*(c1-c2+c3));
       bf = f * ((front.radius_==0.) ? 1. : ( 1. - front.thickness_ * (ior-1.)/(ior*front.radius_)));
     }*/
-    
+
     double getImageSurfaceR(void){
       return imageSurfaceR_;
     }
@@ -394,7 +394,7 @@ namespace NUMA { // レンズは沼です.
     void setIrisScale( double i ){
       irisScale_ = i;
     }
-    
+
     // create a ray sample from lens cylinders.
     bool createRaySample( KelemenMLT &mlt, double fx, double fy, double fz, double lambda, Vector& origin, Vector& dir ){
       Intersection hit;
@@ -422,7 +422,7 @@ namespace NUMA { // レンズは沼です.
 
       int index = surfaces_.size() - 1 ;
       int delta = -1; // 外にでる方向.
-      
+
       while( 1 ) {
 
         // printf("tracing surface %d with %f,%f,%f\n",index,d.x,d.y,d.z);
@@ -431,21 +431,21 @@ namespace NUMA { // レンズは沼です.
           // printf("no next surface\n");
           break;
         }
-        
+
         bool result = surfaces_[ index ].intersect( p, d, hit, irisScale_ );
-        
+
         if( result ){
-          
+
           // 面にあたった.
           if( surfaces_[ index ].type_ == Surface::APERTURE_CIRCLE ||
               surfaces_[ index ].type_ == Surface::APERTURE_HEXAGONAL ){
-            
+
             // 絞りだ.
             p = hit.point_;
             // dは変化なし.
             // ior変化なし.
             index = index + delta;
-            
+
           }else{
             // 右に進むなら今のガラスの屈折率に、
             // 左に進むなら一個前のガラスの屈折率に
@@ -458,7 +458,7 @@ namespace NUMA { // レンズは沼です.
             }else{
               nextIor = 1.;
             }
-            
+
             Vector normal = hit.normal_;
             double roughness = surfaces_[index].roughness_;
             if( roughness > 0. ){
@@ -484,7 +484,7 @@ namespace NUMA { // レンズは沼です.
             double Re, Tr;
             surfaces_[ index ].reflection( lambda, ior_now, nextIor, hit.dir_,  normal, Re, Tr );
             if( mlt.NextSample() < Re ){
-              
+
               // 反射しちゃった.
               Vector nextDir;
               reflect( d, normal, nextDir );
@@ -493,21 +493,21 @@ namespace NUMA { // レンズは沼です.
               p = hit.point_;
               delta = -delta;
               index = index + delta;
-              
+
             }else{
-              
+
               // 屈折する.
               Vector nextDir;
-              
+
               if( !refract( d, normal, ior_now / nextIor, nextDir ) ){
                 // 全反射してしまった.
                 reflect( d, normal, nextDir );
                 delta = -delta;
               }
-              
+
               d = nextDir.normal() ;
               p = hit.point_;
-              
+
               ior_now = nextIor;
               index = index + delta;
             }
@@ -526,7 +526,7 @@ namespace NUMA { // レンズは沼です.
       // 外に出なかった…
       return false;
     }
-    
+
     bool traceRay( double fx, double fy, double fz, double x, double y, double lambda, Vector& origin, Vector& dir ){
       Intersection hit;
       double ior_now = 1.; // 空気.
@@ -570,7 +570,7 @@ namespace NUMA { // レンズは沼です.
             refract( d, hit.normal_, ior_now / nextIor, nextDir );
             d = nextDir.normal() ;
             p = hit.point_;
-            
+
             ior_now = nextIor;
             index = index + delta;
           }
@@ -587,7 +587,7 @@ namespace NUMA { // レンズは沼です.
       return false;
     }
 
-    void drawLine(FRAMEBUFFER::FrameBuffer& fb, double x1, double y1, double x2, double y2, double scale, FRAMEBUFFER::Color& color ) {
+    void drawLine(FRAMEBUFFER::FrameBuffer& fb, double x1, double y1, double x2, double y2, double scale, const FRAMEBUFFER::Color& color ) {
       if( x1 > x2 ){
         double t;
         t = x1; x1 = x2; x2 = t;
@@ -619,7 +619,7 @@ namespace NUMA { // レンズは沼です.
         }
       }
     }
-    
+
     void dump( void ){
       for(int i=0;i<surfaces_.size();i++){
         printf("%d type %d %f %f %f %f %f %f %f %f %f\n",i,
@@ -636,11 +636,11 @@ namespace NUMA { // レンズは沼です.
       FRAMEBUFFER::FrameBuffer fb;
       RANDOM::MTSequence mts;
       mts.init_genrand( time(NULL) );
-      
+
       fb.setup( 4096, 2048 );
       //fb.setup( 1024, 256 );
       double scale = (fb.width_/2) / backfocus;
-      
+
       for(int y=0;y<fb.height_;y++) {
         fb.film_  [ y * fb.width_ + (fb.width_/2) ].set( 1.f,0.f,0.f );
         fb.weight_[ y * fb.width_ + (fb.width_/2) ] = 1.;
@@ -688,13 +688,13 @@ namespace NUMA { // レンズは沼です.
       Intersection hit;
 
       double ior_now = 1.; // 空気.
-      
+
       int samples = 100;
       for(int i = 0 ; i < samples; i ++ ){
         Vector p( backfocus, 0., 0. );
         if( i < samples/2 )
           p.z = imageSurfaceR_ / 2.;
-        
+
         Vector lookat;
         Vector d( -1., 0., 0. );
 
@@ -703,14 +703,14 @@ namespace NUMA { // レンズは沼です.
           r1 = 0.;// mts.genrand_real1() * 2. - 1.;
           r2 = mts.genrand_real1() * 2. - 1.;
         }while( r1 * r1 + r2 * r2 > 1.);
-        
+
         Surface& last( surfaces_.back() );
         lookat.set( last.center_ - last.radius_,
                     last.diameter_ * r1,
                     last.diameter_ * r2);
         d = lookat - p;
         d.normalize();
-        
+
         int index = surfaces_.size() - 1 ;
         int delta = -1;
         int count = 0;
@@ -771,15 +771,15 @@ namespace NUMA { // レンズは沼です.
       fb.normalize();
       fb.save_png(fn,1.,1.);
     }
-    
+
     void dump_XY( char *fn, double lambda, double backfocus ){
       FRAMEBUFFER::FrameBuffer fb;
       RANDOM::MTSequence mts;
       mts.init_genrand( time(NULL) );
-      
+
       fb.setup( 4096, 2048 );
       double scale = (fb.width_/2) / backfocus;
-      
+
       for(int y=0;y<fb.height_;y++) {
         fb.film_  [ y * fb.width_ + (fb.width_/2) ].set( 1.f,0.f,0.f );
         fb.weight_[ y * fb.width_ + (fb.width_/2) ] = 1.;
@@ -802,7 +802,7 @@ namespace NUMA { // レンズは沼です.
             double x = sqrt( surfaces_[i].radius_ * surfaces_[i].radius_ - y * y );
             if( surfaces_[i].type_ == Surface::CYLINDER_Y )
               x = 0.;
-            
+
             if( surfaces_[i].radius_ > 0. )x = -x;
             int ix = (fb.width_/2) + ( x + surfaces_[i].center_ ) * scale ;
             if( ix < 0 || ix > fb.width_ )
@@ -830,13 +830,13 @@ namespace NUMA { // レンズは沼です.
       Intersection hit;
 
       double ior_now = 1.; // 空気.
-      
+
       int samples = 100;
       for(int i = 0 ; i < samples; i ++ ){
         Vector p( backfocus, 0., 0. );
         if( i < samples/2 )
           p.y = imageSurfaceR_ / 2.;
-        
+
         Vector lookat;
         Vector d( -1., 0., 0. );
 
@@ -845,14 +845,14 @@ namespace NUMA { // レンズは沼です.
           r1 = mts.genrand_real1() * 2. - 1.;
           r2 = 0.; // mts.genrand_real1() * 2. - 1.;
         }while( r1 * r1 + r2 * r2 > 1.);
-        
+
         Surface& last( surfaces_.back() );
         lookat.set( last.center_ - last.radius_,
                     last.diameter_ * r1,
                     last.diameter_ * r2);
         d = lookat - p;
         d.normalize();
-        
+
         int index = surfaces_.size() - 1 ;
         int count = 0;
         while( 1 ) {
@@ -911,13 +911,13 @@ namespace NUMA { // レンズは沼です.
       fb.normalize();
       fb.save_png(fn,1.,1.);
     }
-    
+
   };
 
   namespace LOADER{
     namespace LENS {
 
-      
+
       char *tokenize( char *s, char *token ) {
         char *p = (char *)s;
         while( *p && (*p == ' ' || *p == '\t') )
@@ -934,9 +934,9 @@ namespace NUMA { // レンズは沼です.
           return NULL;
         return p;
       }
-      
+
       void load( const char *filename, Lens& lens ){
-        
+
         FILE *fp = fopen( filename, "rb" );
         if(!fp)return;
         double sumz = 0.;
@@ -945,18 +945,18 @@ namespace NUMA { // レンズは沼です.
         float ir = 0.;//image sensor.
         while( !feof(fp) ){
           char line[1024],*p,token[256];
-          
+
           fgets(line,1024,fp);
           if( feof( fp ) )
             break;
-          
+
           p = line;
           p = tokenize( p, token );
           if( token[0] == 'S' || token[0] == 'I' || token[0] == 'Y' ){
             bool radiusInvert = false;
             Surface surface;
             char t;
-            
+
             t = token[0];
             if( strcmp(token,"S") == 0 )
               surface.type_ = Surface::STANDARD;
@@ -969,14 +969,14 @@ namespace NUMA { // レンズは沼です.
               surface.type_ = Surface::APERTURE_HEXAGONAL;
             else if( strcmp(token,"I") == 0 )
               surface.type_ = Surface::APERTURE_CIRCLE;
-            
+
             p = tokenize( p, token );
             surface.diameter_  = atof( token ) / 2.f;
             p = tokenize( p, token );
             surface.radius_  = atof( token );
             if( radiusInvert && surface.radius_ != 0. )
               surface.radius_ = 1. / surface.radius_;
-            
+
             surface.center_  = sumz + surface.radius_;
             p = tokenize( p, token ); // 面厚み.
             surface.thickness_ = atof( token );
@@ -1029,7 +1029,7 @@ namespace NUMA { // レンズは沼です.
       }
     }
     namespace ZEMAX{
-      
+
       char *tokenize( char *s, char *token ) {
         char *p = (char *)s;
         while( *p && (*p == ' ' || *p == '\t') )
@@ -1046,9 +1046,9 @@ namespace NUMA { // レンズは沼です.
           return NULL;
         return p;
       }
-      
+
       void load( const char *filename, Lens& lens ){
-        
+
         FILE *fp = fopen( filename, "rb" );
         if(!fp)return;
         int surfaceIndex = -1;
@@ -1058,7 +1058,7 @@ namespace NUMA { // レンズは沼です.
         double sumz = 0.;
         while( !feof(fp) ){
           char line[1024],*p,token[256];
-          
+
           fgets(line,1024,fp);
           p = line;
           p = tokenize( p, token );
@@ -1076,7 +1076,7 @@ namespace NUMA { // レンズは沼です.
             surface.init();
             isAperture = false;
           }
-          
+
           if( strcmp( token, "TYPE" ) == 0 ){
             p = tokenize( p, token );
             if( strcmp( token, "STANDARD" ) == 0 )
@@ -1087,7 +1087,7 @@ namespace NUMA { // レンズは沼です.
           }
           if( strcmp( token, "STOP") == 0 )
             isAperture = true;
-          
+
           if( strcmp( token, "CURV" ) == 0 ){
             p = tokenize( p, token );
             double curve = atof( token );
@@ -1096,7 +1096,7 @@ namespace NUMA { // レンズは沼です.
             else
               surface.radius_ = 0.;
           }
-          
+
           if( strcmp( token, "DISZ" ) == 0 ){
             p = tokenize( p, token );
             double disz = atof( token );
@@ -1110,12 +1110,12 @@ namespace NUMA { // レンズは沼です.
             p = tokenize( p, token );
             surface.diameter_ = atof( token );
           }
-          
+
           if( strcmp( token, "GLAS" ) == 0 ){
             p = tokenize( p, token ); // name
             p = tokenize( p, token ); // nazo1
             p = tokenize( p, token ); // nazo2
-            
+
             p = tokenize( p, token ); // ior
             surface.ior_ = atof( token );
             p = tokenize( p, token ); // abbe
@@ -1127,9 +1127,9 @@ namespace NUMA { // レンズは沼です.
         // lens.surfaces_.push_back( surface ); // レンズフラッシュ
         lens.imageSurfaceZ_ = surface.center_;
         fclose(fp);
-        
+
       }
-      
+
     }
   }
 

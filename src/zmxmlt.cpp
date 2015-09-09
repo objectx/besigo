@@ -49,10 +49,10 @@ struct PathSample {
   int    wavelength_index;
   double F;
   double weight;
-  
+
   PathSample(const int x_ = 0, const int y_ = 0, const double &wavelength_ = 0., const double F_ = 0., const double weight_ = 1.0) :
   x(x_), y(y_), wavelength(wavelength_), F(F_), weight(weight_) {}
-  
+
   double luminance( void ){
     // return SPECTRUM::getXYZ( wavelength, F ).b_;
     COLOR3::Color3 rgb = SPECTRUM::getXYZ( wavelength, F ).get( COLOR3::RGB );
@@ -73,7 +73,7 @@ public:
   std::vector<COLOR3::Color3> rgb_;
   std::vector<std::vector<float>> pdf_;
   std::vector<std::vector<float>> cdf_;
-  
+
   Texture():w_(0),h_(0){;}
   bool isValid(){ return !w_ && !h_; }
   void load( const char *fn ){
@@ -140,11 +140,11 @@ public:
 
 class Scene {
 public:
-  
+
   MODEL::MQO model_;        // mesh model. contains materials, verticies, indicies.
   Texture  background_;
   RTCScene scene_;
-  
+
   void init( const char *model, const char *bgfn ){
     scene_ = rtcNewScene( RTC_SCENE_STATIC | RTC_SCENE_HIGH_QUALITY, RTC_INTERSECT1 );
     model_.load( model, scene_ );
@@ -157,13 +157,13 @@ public:
     const COLOR3::Color3 &bg( background_.sphere( dir ) );
     return SPECTRUM::getLuminance( bg, lambda );
   }
-  
+
   // 直接照明サンプリング.
   bool isNaN( volatile double b ){
     return !(b == b);
   }
   double solidAngle( VECTORMATH::Vector& p, VECTORMATH::Vector& v1, VECTORMATH::Vector& v2, VECTORMATH::Vector& v3 ) {
-    // http://be.nucl.ap.titech.ac.jp/~koba/cgi-bin/moin.cgi/%E7%AB%8B%E4%BD%93%E8%A7%92
+    // [立体角](http://be.nucl.ap.titech.ac.jp/~koba/cgi-bin/moin.cgi/%E7%AB%8B%E4%BD%93%E8%A7%92)
     VECTORMATH::Vector e1 = v1 - p; e1.normalize();
     VECTORMATH::Vector e2 = v2 - p; e2.normalize();
     VECTORMATH::Vector e3 = v3 - p; e3.normalize();
@@ -187,7 +187,7 @@ public:
     dir.normalize();
     if( normal.dot( dir ) < 0. )
       return 0.;
-    
+
     double radiance = 0.;
     RTCRay ray;
     {
@@ -214,12 +214,12 @@ public:
     double dot1 = light_normal.dot( dir * -1. );
     if( dot1 < 0. )
       return 0.;
-    
+
     double G = dot0 * dot1 / ray.tfar;
     double r = solidAngle( pos, v1, v2, v3 );
     return model_.material(ray)->emitter(lambda) * G * (r / M_PI) / M_PI;
   }
-  
+
   VECTORMATH::Vector reflect( const VECTORMATH::Vector& I, const VECTORMATH::Vector& N ){
     return I - N * 2. * N.dot( I );
   }
@@ -230,13 +230,13 @@ public:
     result = I * eta + (N * (eta * cosi - sqrtf( cost2 )));
     return true;
   }
-  
+
   // pathtrace!
   double radiance( int depth, KelemenMLT& mlt, NUMA::Vector& pos, NUMA::Vector& dir, double lambda, double *dist = NULL ){
-    
+
     if( depth > 32 )
       return 0.;
-    
+
     // do intersect.
     dir.normalize();
     RTCRay ray;
@@ -256,27 +256,27 @@ public:
       ray.time   = 0.f;
     }
     rtcIntersect( scene_, ray );
-    
+
     if( ray.geomID == RTC_INVALID_GEOMETRY_ID ){
       // no hit.
       return radiance_bg( mlt, pos, dir, lambda );
     }
-    
+
     // hit to the scene!
     if( dist )
       *dist = ray.tfar;
-    
+
     VECTORMATH::Vector hit (
       ray.org[0] + ray.dir[0] * ray.tfar,
       ray.org[1] + ray.dir[1] * ray.tfar,
       ray.org[2] + ray.dir[2] * ray.tfar );
-    
+
     VECTORMATH::Vector geometry_normal = model_.normal( ray ); // geometry_normal( ray.Ng[0], ray.Ng[1], ray.Ng[2] ); // プリミティブの法線.
     // VECTORMATH::Vector geometry_normal( ray.Ng[0], ray.Ng[1], ray.Ng[2] ); // プリミティブの法線.
     geometry_normal.normalize();
     VECTORMATH::Vector ray_normal;
     bool               into = false;
-    
+
     if( geometry_normal.dot( dir ) < 0.f ){ // レイは物体に入り込む方向.
       ray_normal = geometry_normal *  1.;
       into = true;
@@ -286,13 +286,13 @@ public:
     VECTORMATH::Vector up(0,1,0);
     VECTORMATH::Vector binormal = up.cross( ray_normal );
     VECTORMATH::Vector tangent  = ray_normal.cross( binormal );
-    
+
     MODEL::Material *mat = model_.material( ray );
     /* COLOR3::Color3 normalRGB( COLOR3::RGB,
                               into ? 1. : 0.,
                               0., 0. );
     return SPECTRUM::getReflectance( normalRGB, lambda );  debug out. */
-    
+
     double russianRandom      = mlt.NextSample();
     double materialColor      = SPECTRUM::getReflectance( mat->color_, lambda ); // この波長における色.
     double russianProbability = materialColor;
@@ -303,7 +303,7 @@ public:
     }else{
       russianProbability = 1.f;
     }
-    
+
     double materialRandom = mlt.NextSample();
     if( materialRandom < mat->refraction_ ) {
 
@@ -350,7 +350,7 @@ public:
           return emission + materialColor * rad * transmittance * Tr / ((1.-probability) * russianProbability);
         }
       }
-    } /*  else{     // DISNEY BRDFへのトライ.
+    } else if (false) {     // DISNEY BRDFへのトライ.
       //return SPECTRUM::getReflectance( COLOR3::Color3( COLOR3::RGB,0,0,1 ), lambda );
       VECTORMATH::Vector nextDir;
       do{
@@ -361,9 +361,10 @@ public:
 
       assert( ray_normal.dot( nextDir ) > 0. );
       assert( ray_normal.dot( dir * -1. ) > 0. );
-      
+
       double b = mat->DisneyBRDF( nextDir, dir * -1., ray_normal, tangent, binormal, lambda );
-      return radiance( depth+1, mlt, hit, nextDir, lambda) * b; } */
+      return radiance( depth+1, mlt, hit, nextDir, lambda) * b;
+    }
     else if( materialRandom < mat->diffuse_ ){
       // diffuse反射
 
@@ -408,10 +409,10 @@ public:
       // specular反射
       VECTORMATH::Vector nextDir = reflect( dir, ray_normal );
       return emission + radiance( depth+1, mlt, hit, nextDir, lambda ) / russianProbability;
-      
+
     }
     // 吸収.
-    
+
     return emission;
   }
   double pathtrace( KelemenMLT& mlt, NUMA::Vector& cpos, NUMA::Vector& cdir, double lambda ){
@@ -450,7 +451,7 @@ PathSample generate_new_path(
 
 
 class KelemenMLTRender {
-  
+
 public:
 
   KelemenMLT mlt_;
@@ -463,14 +464,14 @@ public:
 
   std::vector<FRAMEBUFFER::Color> image_;
   PathSample old_path_;
-  
+
   void init_mlt( int seed, const int width, const int height, NUMA::Lens& lens, Scene& scene ) {
     printf("%d\n",omp_get_thread_num());
     mlt_.xor128_.setSeed( omp_get_thread_num() + seed );
-    
+
     width_ = width;
     height_= height;
-    
+
     image_.resize(width * height);
     for(int i=0;i<width_*height_;i++)
       image_[i].set(0,0,0);
@@ -498,10 +499,10 @@ public:
   }
 
   void step( NUMA::Lens& lens, Scene& scene ){
-    
+
     mlt_.large_step = mlt_.rand01() < p_large_;
     mlt_.InitUsedRandCoords();
-    
+
     PathSample new_path = generate_new_path(mlt_,lens,scene,width_,height_);
 
     double old_lum = old_path_.luminance();
@@ -509,7 +510,7 @@ public:
     double a = std::min(1.0, new_lum / old_lum );
     double new_path_weight = (a + mlt_.large_step) / (new_lum / b_ + p_large_);
     double old_path_weight = (1.0 - a) / (old_lum / b_ + p_large_);
-    
+
     image_[new_path.y  * width_ + new_path.x ] = image_[new_path.y  * width_ + new_path.x ] + new_path.color() * new_path.weight  * new_path_weight;
     image_[old_path_.y * width_ + old_path_.x] = image_[old_path_.y * width_ + old_path_.x] + old_path_.color()* old_path_.weight * old_path_weight;
 
@@ -530,7 +531,7 @@ public:
       }
     }
   }
-  
+
   void accum( std::vector<FRAMEBUFFER::Color> & image ){
     for(int i=0;i<width_*height_;i++)
       image[i] = image[i] + image_[i];
@@ -582,7 +583,7 @@ void parseArgs( int argc, char **argv )
   saveHdr = false;
   lensDump = false;
   autoFocus = true;
-  
+
   for(int i=1;i<argc;i++){
     if( !strcmp( argv[i], "/saveHdr") )
       saveHdr = true;
@@ -590,7 +591,7 @@ void parseArgs( int argc, char **argv )
       lensDump = true;
     if( !strcmp( argv[i], "/manualFocus"))
       autoFocus = false;
-    
+
     if( !strcmp( argv[i], "/model" ) ){
       modelName = argv[i+1];
       i++;
@@ -657,20 +658,20 @@ int main(int argc, char **argv) {
   _MM_SET_DENORMALS_ZERO_MODE( _MM_DENORMALS_ZERO_ON );
   printf("done.\n");
   SPECTRUM::initXyzPdf();
-  
+
   Scene scene;
   KelemenMLTRender render;
   NUMA::Lens lens;
 
   parseArgs( argc, argv );
-  
+
   scene.init( modelName, bgName );
   if( isLensText )
     NUMA::LOADER::LENS::load( lensName, lens );
   else if( isZemax )
     NUMA::LOADER::ZEMAX::load( lensName, lens );
   lens.setIrisScale( irisScale );
-  
+
   if( autoFocus ){
     double bf = NUMA::autofocus( lens, scene.model_.cameraFocus_ );
     double backfrange = lens.getImageSurfaceZ();
@@ -680,7 +681,7 @@ int main(int argc, char **argv) {
     double backfrange = lens.getImageSurfaceZ();
     lens.setImageSurfaceZ( backfrange + focusAdjust );
   }
-  
+
   if( filmSize > 0. )
     lens.setImageSurfaceR( filmSize );
 
@@ -692,7 +693,7 @@ int main(int argc, char **argv) {
   }
   lens.dump();
   printf("dumped\n");
-  
+
   int width  = imageSize;
   int num_parallel = omp_get_max_threads();
 #ifdef CHECK
@@ -716,7 +717,7 @@ int main(int argc, char **argv) {
   for(int i=0;i<num_parallel;i++)
     renders[i].init_mlt(rand(),width,height,lens,scene);
   printf("mlt init\n");
-  
+
   int s = 0;
   double steps = 0.;
 
@@ -726,7 +727,7 @@ int main(int argc, char **argv) {
   time( &previous_time );
 
   for(s=1;s;s++){
-    
+
 #if defined(CHECK) || defined(DEBUG)
 #define MUTATIONS 0x100000
 #else
@@ -749,7 +750,7 @@ int main(int argc, char **argv) {
       printf("time will be up!\n");
       willover = true;
     }
-    
+
 #if defined(CHECK) || defined(DEBUG)
     {
 #else

@@ -1,0 +1,14 @@
+/*
+ * config.h: Configurations
+ */
+#pragma once
+
+#ifndef config_h__E4110D5A_49DE_4760_8226_63486C13CE32
+#define config_h__E4110D5A_49DE_4760_8226_63486C13CE32  1
+
+#cmakedefine    HAVE_OPENMP
+
+#endif  /* config_h__E4110D5A_49DE_4760_8226_63486C13CE32 */
+/*
+ * [END of FILE]
+ */

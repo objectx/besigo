@@ -40,7 +40,7 @@ set (TARGET_NAME "besigo")
 set (SOURCE_FILES zmxmlt.cpp stb_image.c)
 
 configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/config.h" @ONLY)
-
+add_definitions ("-DHAVE_CONFIG_H=1")
 add_subdirectory (TBB)
 add_subdirectory (Embree)
 

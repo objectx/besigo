@@ -20,9 +20,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#ifdef HAVE_OPENMP
-#   include <omp.h>
-#endif
 #include "vectormath.h"
 #include "framebuffer.h"
 #include "mtseq.h"
@@ -33,13 +30,13 @@
 #include "lensnuma.h"
 #define STBI_HEADER_FILE_ONLY
 #include "stb_image.c"
-
-#include "include/embree2/rtcore.h" // EMBREE.
-#include "include/embree2/rtcore_ray.h" // EMBREE.
+#include <tbb/tbb.h>
+#include <embree2/rtcore.h>     // EMBREE.
+#include <embree2/rtcore_ray.h> // EMBREE.
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 
-// #define CHECK // チェックモード。低解像度、7スレッド
+#define CHECK // チェックモード。低解像度、7スレッド
 // #define DEBUG // デバッグモード。低解像度、1スレッド
 
 
@@ -469,16 +466,12 @@ public:
   PathSample old_path_;
 
   void init_mlt( int seed, const int width, const int height, NUMA::Lens& lens, Scene& scene ) {
-#ifdef HAVE_OPENMP
-    printf("%d\n",omp_get_thread_num());
-    mlt_.xor128_.setSeed( omp_get_thread_num() + seed );
-#else
     mlt_.xor128_.setSeed (seed) ;
-#endif
+
     width_ = width;
     height_= height;
 
-    image_.resize(width * height);
+    image_.resize(width * height) ;
     for(int i=0;i<width_*height_;i++)
       image_[i].set(0,0,0);
 
@@ -717,18 +710,7 @@ int main(int argc, char **argv) {
   printf("dumped\n");
 
   int width  = imageSize;
-  int num_parallel = 1 ;
-#ifdef HAVE_OPENMP
-#ifdef CHECK
-  num_parallel = omp_get_max_threads() - 1;
-#else
-  num_parallel = omp_get_max_threads () ;
-#endif
-#endif
-
-#ifdef DEBUG
-  num_parallel = 1;
-#endif
+  int num_parallel = tbb::task_scheduler_init::default_num_threads () ;
 
   FRAMEBUFFER::FrameBuffer fb;
   int height = width * 3/4;
@@ -740,13 +722,15 @@ int main(int argc, char **argv) {
   double div = 0.;
 
   srand(time(NULL));
-#ifdef HAVE_OPENMP
-#   pragma omp parallel for
-#endif
-  for(int i=0;i<num_parallel;i++)
-    renders[i].init_mlt(rand(),width,height,lens,scene);
-  printf("mlt init\n");
-
+    {
+        auto initializer = [&renders, width, height, &lens, &scene] (const tbb::blocked_range<size_t> &r) {
+            for (auto i = r.begin () ; i != r.end () ; ++i) {
+                renders [i].init_mlt (31 * i + rand (), width, height, lens, scene) ;
+            }
+        } ;
+        tbb::parallel_for (tbb::blocked_range<size_t> {0, num_parallel}, initializer) ;
+        printf ("mlt init\n");
+    }
   int s = 0;
   double steps = 0.;
 
@@ -763,15 +747,18 @@ int main(int argc, char **argv) {
 #define MUTATIONS 0x400000
 #endif
 
-#ifdef HAVE_OPENMP
-#   pragma omp parallel for
-#endif
-    for(int i=0;i<num_parallel;i++){
-      for(int step=0;step<MUTATIONS;step++)
-        renders[i].step( lens, scene );
-      printf("%d accept, %d reject (%f %% accept)\n",renders[i].accept_,renders[i].reject_,
-             renders[i].accept_ * 100. / (renders[i].reject_ + renders[i].accept_) );
-    }
+      {
+          auto mutator = [&renders, &lens, &scene](const tbb::blocked_range<size_t> &r) {
+              for (auto i = r.begin () ; i != r.end () ; ++i) {
+                  for (int step = 0; step < MUTATIONS; step++) {
+                      renders[i].step (lens, scene);
+                  }
+                  printf ("%d accept, %d reject (%f %% accept)\n", renders[i].accept_, renders[i].reject_,
+                          renders[i].accept_ * 100. / (renders[i].reject_ + renders[i].accept_));
+              }
+          } ;
+          tbb::parallel_for (tbb::blocked_range<size_t> {0, num_parallel}, mutator) ;
+      }
     steps += (double)MUTATIONS;
 
     time_t current_time;

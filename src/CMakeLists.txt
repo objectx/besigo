@@ -4,6 +4,13 @@ cmake_minimum_required (VERSION 3.3)
 project (BESIGO
     LANGUAGES C CXX)
 
+if (NOT "${CMAKE_BUILD_TYPE}")
+    message ("Build type unspecified... Use \"RELEASE\"")
+    set (CMAKE_BUILD_TYPE RELEASE)
+else ()
+    message ("Build type: \"${CMAKE_BUILD_TYPE}\"")
+endif ()
+
 list (INSERT CMAKE_MODULE_PATH 0 ${BESIGO_SOURCE_DIR}/CMake)
 
 include (FindOpenMP)

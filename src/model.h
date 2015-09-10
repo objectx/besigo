@@ -21,7 +21,7 @@
 #include "kelemenmlt.h"
 
 namespace MODEL {
-  
+
   struct Material{
 
     float metallic_;// 0 1 0
@@ -69,8 +69,8 @@ namespace MODEL {
       //reflection_ += diffuse_;
       //refraction_ += reflection_; // ( = reflection_ + diffuse_ )
       printf("CDF       : D %f, R %f, T %f\n",diffuse_,reflection_,refraction_);
-      
-      
+
+
       // "water" shader(3) col(0.820 0.890 1.000 0.000) dif(0.010) amb(0.600) emi(0.000) spc(0.000) power(5.00) refract(1.330)
       // default values.
       metallic_ = 0;
@@ -94,7 +94,7 @@ namespace MODEL {
     double emitter( double lambda ) const {
       return SPECTRUM::normalizedPlanck( emitter_color_, lambda ) * emitter_;
     }
-    
+
     const float PI = 3.14159265358979323846;
     inline float sqr(float x) { return x*x; }
     inline float clamp( float a, float l, float h ){
@@ -131,13 +131,13 @@ namespace MODEL {
       return 1/(Ndotv + sqrt(a + b - a*b));
     }
     float DisneyBRDF(
-      VECTORMATH::Vector& L,
-      VECTORMATH::Vector& V,
-      VECTORMATH::Vector& N,
-      VECTORMATH::Vector& X,
-      VECTORMATH::Vector& Y,
+      const VECTORMATH::Vector& L,
+      const VECTORMATH::Vector& V,
+      const VECTORMATH::Vector& N,
+      const VECTORMATH::Vector& X,
+      const VECTORMATH::Vector& Y,
       float Lambda ) {
-      
+
       float NdotL = N.dot(L);
       float NdotV = N.dot(V);
       if (NdotL < 0 || NdotV < 0) return 0.;
@@ -194,16 +194,16 @@ namespace MODEL {
   };
 
   class MQO {
-    
+
   public:
-    
+
     class Vertex{
     public:
       Vertex(){;}
       Vertex( float _x, float _y, float _z ) : x(_x), y(_y), z(_z), a(0.f) {;}
       float x, y, z, a ;
     };
-    
+
     typedef std::vector< Vertex       > Vertices;
     typedef std::vector< unsigned int > Indices;
     typedef std::vector< Material > Materials;
@@ -219,12 +219,12 @@ namespace MODEL {
       VECTORMATH::Vector v_[3];
     };
     typedef std::vector<Triangle> Triangles;
-    
+
   public:
 
     MQO(){ ; }
     virtual ~MQO(){ ; }
-    
+
     VECTORMATH::Vector cameraPos_;
     VECTORMATH::Vector cameraDirX_;
     VECTORMATH::Vector cameraDirY_;
@@ -233,7 +233,7 @@ namespace MODEL {
     Materials           materials_;
     Triangles           emitters_; // for NEE
     double              cameraFocus_;
-    
+
     void createCameraRay(
       VECTORMATH::Vector &cameraOutPos,
       VECTORMATH::Vector &cameraOutDir,
@@ -248,13 +248,13 @@ namespace MODEL {
         cameraDirX_ * cameraOutPos.z +
         cameraDirY_ * cameraOutPos.y +
         cameraDirZ_ * -cameraOutPos.x;
-      worldRayDir = 
+      worldRayDir =
         cameraDirX_ * cameraOutDir.z +
         cameraDirY_ * cameraOutDir.y +
         cameraDirZ_ * -cameraOutDir.x;
     }
-    
-    
+
+
     // 受け付ける文法："hagehoge"  / hoge( hoge hoge hoge )
     //トークンセパレータ：\x20 || \t
     char *tokenize( char *s, char *token ) {
@@ -288,7 +288,7 @@ namespace MODEL {
         return NULL;
       return p;
     }
-    
+
     void calcSmoothNormals(
       Vertices& v,
       std::vector<VECTORMATH::Vector>& n,
@@ -319,9 +319,9 @@ namespace MODEL {
       for(int i=0;i<n.size();i++)
         n[i].normalize();
     }
-    
+
     bool load( const char *fn, RTCScene& scene ) {
-      
+
       FILE *fp;
       char line[1024];
       char *p,*p2;
@@ -346,12 +346,12 @@ namespace MODEL {
 
       fgets(line,1024,fp);
       //if(strcmp(line,"Format Text Ver 1.1\r\n") != 0) return false;
-      
+
       materials_.clear();
       materials_.push_back( Material() );
-      
+
       VECTORMATH::Vector lookat;
-      
+
       //ロード開始
       while(1) {
         fgets(line,1024,fp);
@@ -455,14 +455,14 @@ namespace MODEL {
           Vertices vertex;
           Indices  index;
           std::vector<int> material;
-          
+
           //object
           char objname[1024];
           p = tokenize(p,objname);
           printf("[OBJ] %-20s ",objname);
           depth = 1;
           currface = totalface;
-          
+
           while(1) {
             fgets(line,1024,fp);
             p = line;
@@ -530,13 +530,13 @@ namespace MODEL {
                     if( !p )
                       break;
                   }
-                  
+
                   materialIndex = m; // 代表.
                   index.push_back( a );
                   index.push_back( b );
                   index.push_back( c );
                   material.push_back(m);
-                  
+
                   if( materials_[m].emitter_ > 0. ){
                     // エミッター登録.
                     Triangle t;
@@ -545,7 +545,7 @@ namespace MODEL {
                     t.v_[2].set(vertex[c].x,vertex[c].y,vertex[c].z);
                     emitters_.push_back(t);
                   }
-                  
+
                   totalface++;
                 } else if(token[0] == '4') {
                   int m, a, b, c, d;
@@ -587,7 +587,7 @@ namespace MODEL {
                     if( !p )
                       break;
                   }
-                  
+
                   materialIndex = m;
                   index.push_back(a);
                   index.push_back(b);
@@ -609,12 +609,12 @@ namespace MODEL {
                     emitters_.push_back(t1);
                     emitters_.push_back(t2);
                   }
-                  
+
                   totalface++;
                   totalface++;
                 }
               }
-              
+
             } else if(strcmp(token,"BVertex")==0) {
               printf("バイナリ形式はサポートされていません.\n");
               break;
@@ -712,7 +712,7 @@ namespace MODEL {
       fclose(fp);
       return true;
     }
-    
+
     VECTORMATH::Vector normal( const RTCRay & ray ){
       //printf("geomID %d, primID %d\n",ray.geomID,ray.primID);
       int i1 = objects_[ ray.geomID ].index_[ ray.primID * 3     ];

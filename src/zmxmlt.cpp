@@ -710,7 +710,7 @@ int main(int argc, char **argv) {
   printf("dumped\n");
 
   int width  = imageSize;
-  int num_parallel = tbb::task_scheduler_init::default_num_threads () ;
+  const size_t num_parallel = tbb::task_scheduler_init::default_num_threads () ;
 
   FRAMEBUFFER::FrameBuffer fb;
   int height = width * 3/4;

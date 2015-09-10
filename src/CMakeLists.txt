@@ -13,7 +13,7 @@ endif ()
 
 list (INSERT CMAKE_MODULE_PATH 0 ${BESIGO_SOURCE_DIR}/CMake)
 
-include (FindOpenMP)
+# include (FindOpenMP)
 include (EnableTBB)
 include (EnableEmbree)
 

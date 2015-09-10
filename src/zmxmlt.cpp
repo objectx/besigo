@@ -39,7 +39,6 @@
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 
-
 // #define CHECK // チェックモード。低解像度、7スレッド
 // #define DEBUG // デバッグモード。低解像度、1スレッド
 
@@ -560,9 +559,9 @@ void tonemap( std::vector<FRAMEBUFFER::Color> &accum, std::vector<unsigned char>
 }
 
 
-char * modelName = "";
-char * lensName  = "";
-char * bgName    = "";
+char * modelName = nullptr ;
+char * lensName  = nullptr ;
+char * bgName    = "" ;
 bool isZemax;
 bool isLensText;
 float focusAdjust;
@@ -657,8 +656,25 @@ void parseArgs( int argc, char **argv )
   }
 }
 
+static void usage_and_die (const char *argv0) {
+    const char *prog = strrchr (argv0, '/') ;
+    if (prog == nullptr) {
+        prog = argv0 ;
+    }
+    else {
+        prog++ ;
+    }
+    fprintf (stderr, "Usage: %s /model <model> /lens <lens>...\n", prog) ;
+    exit (1) ;
+}
+
 int main(int argc, char **argv) {
 
+  parseArgs( argc, argv );
+  if (modelName == nullptr || lensName == nullptr) {
+    usage_and_die (argv [0]) ;
+    /*NOTREACHED*/
+  }
   printf("init embree.\n");
   rtcInit( NULL );
   _MM_SET_FLUSH_ZERO_MODE    ( _MM_FLUSH_ZERO_ON     );
@@ -670,7 +686,6 @@ int main(int argc, char **argv) {
   KelemenMLTRender render;
   NUMA::Lens lens;
 
-  parseArgs( argc, argv );
 
   scene.init( modelName, bgName );
   if( isLensText )

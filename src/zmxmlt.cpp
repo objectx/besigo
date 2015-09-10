@@ -8,6 +8,9 @@
 // GAJAI!!!!!!!!
 // BESIGO!!!!!!
 
+#ifdef HAVE_CONFIG_H
+#   include "config.h"
+#endif
 #include <stdio.h>
 #include <algorithm>
 #include <vector>
@@ -17,8 +20,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
-#include <omp.h>
-
+#ifdef HAVE_OPENMP
+#   include <omp.h>
+#endif
 #include "vectormath.h"
 #include "framebuffer.h"
 #include "mtseq.h"
@@ -466,9 +470,12 @@ public:
   PathSample old_path_;
 
   void init_mlt( int seed, const int width, const int height, NUMA::Lens& lens, Scene& scene ) {
+#ifdef HAVE_OPENMP
     printf("%d\n",omp_get_thread_num());
     mlt_.xor128_.setSeed( omp_get_thread_num() + seed );
-
+#else
+    mlt_.xor128_.setSeed (seed) ;
+#endif
     width_ = width;
     height_= height;
 
@@ -695,10 +702,15 @@ int main(int argc, char **argv) {
   printf("dumped\n");
 
   int width  = imageSize;
-  int num_parallel = omp_get_max_threads();
+  int num_parallel = 1 ;
+#ifdef HAVE_OPENMP
 #ifdef CHECK
   num_parallel = omp_get_max_threads() - 1;
+#else
+  num_parallel = omp_get_max_threads () ;
 #endif
+#endif
+
 #ifdef DEBUG
   num_parallel = 1;
 #endif
@@ -713,7 +725,9 @@ int main(int argc, char **argv) {
   double div = 0.;
 
   srand(time(NULL));
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+#   pragma omp parallel for
+#endif
   for(int i=0;i<num_parallel;i++)
     renders[i].init_mlt(rand(),width,height,lens,scene);
   printf("mlt init\n");
@@ -733,7 +747,10 @@ int main(int argc, char **argv) {
 #else
 #define MUTATIONS 0x400000
 #endif
-#pragma omp parallel for
+
+#ifdef HAVE_OPENMP
+#   pragma omp parallel for
+#endif
     for(int i=0;i<num_parallel;i++){
       for(int step=0;step<MUTATIONS;step++)
         renders[i].step( lens, scene );

@@ -14,8 +14,7 @@ if (${OPENMP_FOUND})
     message ("OpenMP: ${OpenMP_CXX_FLAGS}")
     add_compile_options (${OpenMP_CXX_FLAGS})
     list (APPEND CMAKE_EXE_LINKER_FLAGS "${OpenMP_CXX_FLAGS}")
-else ()
-    message (FATAL_ERROR "Sorry, OpenMP required.")
+    set (HAVE_OPENMP 1)
 endif ()
 
 function (setvar_default var_)
@@ -33,10 +32,12 @@ set (CMAKE_INSTALL_RPATH "@executable_path/")
 set (TARGET_NAME "besigo")
 set (SOURCE_FILES zmxmlt.cpp stb_image.c)
 
+configure_file ("${CMAKE_CURRENT_SOURCE_DIR}/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/config.h" @ONLY)
+
 add_subdirectory (TBB)
 add_subdirectory (Embree)
 
-include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable (${TARGET_NAME} ${SOURCE_FILES})
     target_compile_features (${TARGET_NAME} PRIVATE cxx_nonstatic_member_init)

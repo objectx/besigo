@@ -15,8 +15,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <vector>
-#include "include/embree2/rtcore.h"
-#include "include/embree2/rtcore_ray.h"
+#include <embree2/rtcore.h>
+#include <embree2/rtcore_ray.h>
 #include "color3.h"
 #include "kelemenmlt.h"
 

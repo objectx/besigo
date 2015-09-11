@@ -36,7 +36,7 @@
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 
-#define CHECK // チェックモード。低解像度、7スレッド
+//#define CHECK // チェックモード。低解像度、7スレッド
 // #define DEBUG // デバッグモード。低解像度、1スレッド
 
 
@@ -710,7 +710,15 @@ int main(int argc, char **argv) {
   printf("dumped\n");
 
   int width  = imageSize;
-  const size_t num_parallel = tbb::task_scheduler_init::default_num_threads () ;
+  const size_t num_parallel = (
+#ifdef DEBUG
+    1
+#elif defined (CHECK)
+    tbb::task_scheduler_init::default_num_threads () - 1
+#else
+    tbb::task_scheduler_init::default_num_threads ()
+#endif
+    ) ;
 
   FRAMEBUFFER::FrameBuffer fb;
   int height = width * 3/4;
@@ -722,15 +730,15 @@ int main(int argc, char **argv) {
   double div = 0.;
 
   srand(time(NULL));
-    {
-        auto initializer = [&renders, width, height, &lens, &scene] (const tbb::blocked_range<size_t> &r) {
-            for (auto i = r.begin () ; i != r.end () ; ++i) {
-                renders [i].init_mlt (31 * i + rand (), width, height, lens, scene) ;
-            }
-        } ;
-        tbb::parallel_for (tbb::blocked_range<size_t> {0, num_parallel}, initializer) ;
-        printf ("mlt init\n");
-    }
+  {
+      auto initializer = [&renders, width, height, &lens, &scene] (const tbb::blocked_range<size_t> &r) {
+          for (auto i = r.begin () ; i != r.end () ; ++i) {
+              renders [i].init_mlt (31 * i + rand (), width, height, lens, scene) ;
+          }
+      } ;
+      tbb::parallel_for (tbb::blocked_range<size_t> {0, num_parallel}, initializer) ;
+      printf ("mlt init\n");
+  }
   int s = 0;
   double steps = 0.;
 
@@ -747,18 +755,18 @@ int main(int argc, char **argv) {
 #define MUTATIONS 0x400000
 #endif
 
-      {
-          auto mutator = [&renders, &lens, &scene](const tbb::blocked_range<size_t> &r) {
-              for (auto i = r.begin () ; i != r.end () ; ++i) {
-                  for (int step = 0; step < MUTATIONS; step++) {
-                      renders[i].step (lens, scene);
-                  }
-                  printf ("%d accept, %d reject (%f %% accept)\n", renders[i].accept_, renders[i].reject_,
-                          renders[i].accept_ * 100. / (renders[i].reject_ + renders[i].accept_));
-              }
-          } ;
-          tbb::parallel_for (tbb::blocked_range<size_t> {0, num_parallel}, mutator) ;
-      }
+    {
+        auto mutator = [&renders, &lens, &scene](const tbb::blocked_range<size_t> &r) {
+            for (auto i = r.begin () ; i != r.end () ; ++i) {
+                for (int step = 0; step < MUTATIONS; step++) {
+                    renders[i].step (lens, scene);
+                }
+                printf ("%d accept, %d reject (%f %% accept)\n", renders[i].accept_, renders[i].reject_,
+                        renders[i].accept_ * 100. / (renders[i].reject_ + renders[i].accept_));
+            }
+        } ;
+        tbb::parallel_for (tbb::blocked_range<size_t> {0, num_parallel}, mutator) ;
+    }
     steps += (double)MUTATIONS;
 
     time_t current_time;

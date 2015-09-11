@@ -18,7 +18,7 @@
 
 ## Run
  * Windows
-    * BUILD/bin/Release/besigo ...
+    * `BUILD/bin/Release/besigo ...`
  * OSX
-    * BUILD/bin/besigo
+    * `BUILD/bin/besigo`
 

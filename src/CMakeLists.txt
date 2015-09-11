@@ -17,13 +17,6 @@ list (INSERT CMAKE_MODULE_PATH 0 ${BESIGO_SOURCE_DIR}/CMake)
 include (EnableTBB)
 include (EnableEmbree)
 
-if (${OPENMP_FOUND})
-    message ("OpenMP: ${OpenMP_CXX_FLAGS}")
-    add_compile_options (${OpenMP_CXX_FLAGS})
-    list (APPEND CMAKE_EXE_LINKER_FLAGS "${OpenMP_CXX_FLAGS}")
-    set (HAVE_OPENMP 1)
-endif ()
-
 function (setvar_default var_)
     if (NOT DEFINED ${var_})
         set (${var_} ${ARGN} PARENT_SCOPE)
@@ -48,7 +41,7 @@ include_directories (${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable (${TARGET_NAME} ${SOURCE_FILES})
     target_compile_features (${TARGET_NAME} PRIVATE cxx_nonstatic_member_init)
-    target_link_libraries (${TARGET_NAME} PRIVATE embree tbb tbbmalloc)
+    target_link_libraries   (${TARGET_NAME} PRIVATE embree tbb tbbmalloc)
 
 # Fixup dependend DLL pathes
 if (${APPLE})
